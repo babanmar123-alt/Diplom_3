@@ -51,3 +51,11 @@ class BasePage:
     def wait_for_invisibility(self, locator: tuple):
         """Ждёт, пока элемент не станет невидимым."""
         return self.wait.until(EC.invisibility_of_element_located(locator))
+
+    def get_current_url(self) -> str:
+        """Возвращает текущий URL."""
+        return self.driver.current_url
+
+    def execute_script(self, script: str, *args):
+        """Выполняет JS-скрипт (для drag-and-drop)."""
+        return self.driver.execute_script(script, *args)

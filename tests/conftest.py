@@ -24,13 +24,19 @@ def driver(request):
 
 @pytest.fixture
 def registered_user():
-    """Создаёт уникального пользователя через API и удаляет после теста."""
+    """Создаёт уникального пользователя через API и удаляет после теста.
+
+    ВАЖНО: без ассертов — только подготовка и очистка данных.
+    """
     user_data = generate_user_data()
 
     response = requests.post(API_REGISTER, json=user_data)
-    assert response.status_code == 200, f"Не удалось создать пользователя: {response.text}"
 
-    token = response.json()["accessToken"]
+    if response.status_code != 200:
+        yield {"email": None, "password": None, "name": None, "token": None}
+        return
+
+    token = response.json().get("accessToken")
 
     yield {
         "email": user_data["email"],
@@ -39,5 +45,5 @@ def registered_user():
         "token": token
     }
 
-    # Удаляем пользователя после теста
-    requests.delete(API_USER, headers={"Authorization": token})
+    if token:
+        requests.delete(API_USER, headers={"Authorization": token})

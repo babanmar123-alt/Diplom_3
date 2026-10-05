@@ -1,101 +1,112 @@
-import time
+import allure
 
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support import expected_conditions as EC
-
+from locators.main_locators import MainLocators
 from pages.base_page import BasePage
+from helpers.urls import MAIN_PAGE
 
 
 class MainPage(BasePage):
     """Главная страница (Конструктор)."""
 
-    # Локаторы
-    CONSTRUCTOR_BUTTON = (By.XPATH, "//p[text()='Конструктор']")
-    ORDERS_FEED_BUTTON = (By.XPATH, "//p[text()='Лента Заказов']")
-    INGREDIENT_ITEM = (By.XPATH, "(//a[contains(@class, 'BurgerIngredient_ingredient')])[1]")
-    MODAL_WINDOW = (By.XPATH, "//div[contains(@class, 'Modal_modal__')]")
-    MODAL_CLOSE_BUTTON = (By.XPATH, "//button[contains(@class, 'Modal_modal__close')]")
-    INGREDIENT_COUNTER = (By.XPATH, "//p[contains(@class, 'counter_counter__num')]")
-    BASKET = (By.XPATH, "//ul[contains(@class, 'BurgerConstructor_basket')]")
-    ORDER_BUTTON = (By.XPATH, "//button[text()='Оформить заказ']")
-    ORDER_NUMBER = (By.XPATH, "//h2[contains(@class, 'Modal_modal__title')]")
-
+    @allure.step("Открыть главную страницу")
     def open(self):
         """Открывает главную страницу."""
-        super().open("https://stellarburgers.education-services.ru/")
-        return self
+        super().open(MAIN_PAGE)
 
+    @allure.step("Кликнуть на «Конструктор»")
     def click_constructor(self):
         """Кликает на «Конструктор»."""
-        self.click(self.CONSTRUCTOR_BUTTON)
-        return self
+        self.click(MainLocators.CONSTRUCTOR_BUTTON)
 
+    @allure.step("Кликнуть на «Лента Заказов»")
     def click_orders_feed(self):
         """Кликает на «Лента Заказов»."""
-        self.click(self.ORDERS_FEED_BUTTON)
-        return self
+        self.click(MainLocators.ORDERS_FEED_BUTTON)
 
+    @allure.step("Кликнуть на первый ингредиент")
     def click_ingredient(self):
         """Кликает на первый ингредиент."""
-        self.click(self.INGREDIENT_ITEM)
-        return self
+        self.click(MainLocators.INGREDIENT_ITEM)
 
+    @allure.step("Проверить, видно ли модальное окно")
     def is_modal_visible(self) -> bool:
         """Проверяет, видно ли модальное окно."""
-        return self.is_visible(self.MODAL_WINDOW)
+        return self.is_visible(MainLocators.MODAL_WINDOW)
 
+    @allure.step("Закрыть модальное окно")
     def close_modal(self):
         """Закрывает модальное окно."""
-        self.click(self.MODAL_CLOSE_BUTTON)
-        self.wait_for_invisibility(self.MODAL_WINDOW)
-        return self
+        self.click(MainLocators.MODAL_CLOSE_BUTTON)
+        self.wait_for_invisibility(MainLocators.MODAL_WINDOW)
 
+    @allure.step("Получить счётчик ингредиента")
     def get_ingredient_counter(self) -> int:
         """Возвращает значение счётчика ингредиента."""
-        text = self.get_text(self.INGREDIENT_COUNTER)
-        return int(text) if text else 0
+        try:
+            text = self.get_text(MainLocators.INGREDIENT_COUNTER)
+            return int(text) if text else 0
+        except Exception:
+            return 0
 
+    @allure.step("Добавить ингредиент в заказ")
     def add_ingredient_to_order(self):
-        """Добавляет ингредиент в заказ (drag-and-drop)."""
-        ingredient = self.find(self.INGREDIENT_ITEM)
-        basket = self.find(self.BASKET)
+        """Добавляет ингредиент в заказ через JS drag-and-drop (DataTransfer)."""
+        ingredient = self.find(MainLocators.INGREDIENT_ITEM)
+        basket = self.find(MainLocators.BASKET)
 
-        # JS drag-and-drop
-        self.driver.execute_script("""
-            function createEvent(typeOfEvent) {
-                var event = document.createEvent("CustomEvent");
-                event.initCustomEvent(typeOfEvent, true, true, null);
-                event.dataTransfer = {
-                    data: {},
-                    setData: function(key, value) { this.data[key] = value; },
-                    getData: function(key) { return this.data[key]; }
-                };
-                return event;
-            }
-            function dispatchEvent(element, event, transferData) {
-                if (transferData !== undefined) {
-                    event.dataTransfer = transferData;
-                }
-                element.dispatchEvent(event);
-            }
+        self.execute_script("""
             var source = arguments[0];
             var target = arguments[1];
-            var dragStartEvent = createEvent('dragstart');
-            dispatchEvent(source, dragStartEvent);
-            var dropEvent = createEvent('drop');
-            dispatchEvent(target, dropEvent, dragStartEvent.dataTransfer);
-            var dragEndEvent = createEvent('dragend');
-            dispatchEvent(source, dragEndEvent, dragStartEvent.dataTransfer);
+
+            var dataTransfer = new DataTransfer();
+
+            var dragStartEvent = new DragEvent('dragstart', {
+                bubbles: true,
+                cancelable: true,
+                dataTransfer: dataTransfer
+            });
+            source.dispatchEvent(dragStartEvent);
+
+            var dragEnterEvent = new DragEvent('dragenter', {
+                bubbles: true,
+                cancelable: true,
+                dataTransfer: dataTransfer
+            });
+            target.dispatchEvent(dragEnterEvent);
+
+            var dragOverEvent = new DragEvent('dragover', {
+                bubbles: true,
+                cancelable: true,
+                dataTransfer: dataTransfer
+            });
+            target.dispatchEvent(dragOverEvent);
+
+            var dropEvent = new DragEvent('drop', {
+                bubbles: true,
+                cancelable: true,
+                dataTransfer: dataTransfer
+            });
+            target.dispatchEvent(dropEvent);
+
+            var dragEndEvent = new DragEvent('dragend', {
+                bubbles: true,
+                cancelable: true,
+                dataTransfer: dataTransfer
+            });
+            source.dispatchEvent(dragEndEvent);
         """, ingredient, basket)
 
-        time.sleep(1)
+        # Ждём, пока счётчик станет >= 1
+        self.wait.until(
+            lambda d: int(d.find_element(*MainLocators.INGREDIENT_COUNTER).text or 0) >= 1
+        )
 
+    @allure.step("Кликнуть на «Оформить заказ»")
     def click_order_button(self):
         """Кликает на «Оформить заказ»."""
-        self.click(self.ORDER_BUTTON)
-        return self
+        self.click(MainLocators.ORDER_BUTTON)
 
+    @allure.step("Получить номер оформленного заказа")
     def get_order_number(self) -> str:
         """Возвращает номер оформленного заказа."""
-        self.wait.until(EC.visibility_of_element_located(self.ORDER_NUMBER))
-        return self.get_text(self.ORDER_NUMBER)
+        return self.get_text(MainLocators.ORDER_NUMBER)
