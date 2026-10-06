@@ -26,18 +26,20 @@ def driver(request):
 def registered_user():
     """Создаёт уникального пользователя через API и удаляет после теста.
 
-    ВАЖНО: без ассертов — только подготовка и очистка данных.
+    Если пользователь не создался — тест пропускается (pytest.skip).
     """
     user_data = generate_user_data()
 
+    # Создаём пользователя
     response = requests.post(API_REGISTER, json=user_data)
 
+    # Если не создался — пропускаем тест
     if response.status_code != 200:
-        yield {"email": None, "password": None, "name": None, "token": None}
-        return
+        pytest.skip(f"Не удалось создать пользователя: {response.text}")
 
-    token = response.json().get("accessToken")
+    token = response.json()["accessToken"]
 
+    # ОДИН yield — передаём данные в тест
     yield {
         "email": user_data["email"],
         "password": user_data["password"],
@@ -45,6 +47,5 @@ def registered_user():
         "token": token
     }
 
-    if token:
-        requests.delete(API_USER, headers={"Authorization": token})
-        
+    # Очистка: удаляем пользователя
+    requests.delete(API_USER, headers={"Authorization": token})
