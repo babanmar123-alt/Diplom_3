@@ -30,3 +30,4 @@ class OrdersPage(BasePage):
         """Возвращает список номеров заказов в работе."""
         elements = self.find_all(OrdersLocators.ORDERS_IN_PROGRESS)
         return [el.text for el in elements]
+    

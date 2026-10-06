@@ -47,3 +47,4 @@ def registered_user():
 
     if token:
         requests.delete(API_USER, headers={"Authorization": token})
+        

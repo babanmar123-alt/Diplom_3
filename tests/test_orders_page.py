@@ -76,3 +76,4 @@ class TestOrdersPage:
         orders_in_progress = orders_page.get_orders_in_progress()
 
         assert len(orders_in_progress) > 0
+        

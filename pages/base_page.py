@@ -59,3 +59,4 @@ class BasePage:
     def execute_script(self, script: str, *args):
         """Выполняет JS-скрипт (для drag-and-drop)."""
         return self.driver.execute_script(script, *args)
+    

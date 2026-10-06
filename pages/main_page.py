@@ -110,3 +110,4 @@ class MainPage(BasePage):
     def get_order_number(self) -> str:
         """Возвращает номер оформленного заказа."""
         return self.get_text(MainLocators.ORDER_NUMBER)
+    

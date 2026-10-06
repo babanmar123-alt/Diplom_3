@@ -19,3 +19,4 @@ class LoginPage(BasePage):
         self.find(LoginLocators.EMAIL_INPUT).send_keys(email)
         self.find(LoginLocators.PASSWORD_INPUT).send_keys(password)
         self.click(LoginLocators.LOGIN_BUTTON)
+        

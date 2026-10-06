@@ -57,3 +57,4 @@ class TestMainFunctionality:
         page.add_ingredient_to_order()
 
         assert page.get_ingredient_counter() >= 1
+        
